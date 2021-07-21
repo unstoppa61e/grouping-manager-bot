@@ -55,12 +55,14 @@ class Match(commands.Cog):
     @commands.command()
     async def match(self, ctx):
         await self.bot.wait_until_ready()
-        self.embed.description = self.make_text(ctx.author.mention)
-        self.embed.color = discord.Color.green()
-        channel = ctx.channel
-        # msg = await ctx.send(embed=self.embed)
         # 動作確認用
-        msg = await ctx.send(self.make_text(ctx.author.mention))
+        embed = discord.Embed()
+        embed.description = self.make_text(ctx.author.mention)
+        embed.color = discord.Color.green()
+        # self.embed.description = self.make_text(ctx.author.mention)
+        # self.embed.color = discord.Color.green()
+        channel = ctx.channel
+        msg = await ctx.send(embed=embed)
         emojis = ['✋', '2️⃣', '3️⃣']
         for emoji in emojis:
             await msg.add_reaction(emoji)
