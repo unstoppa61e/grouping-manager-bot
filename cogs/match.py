@@ -20,7 +20,7 @@ class Match(commands.Cog):
             f"{author_mention}\n:two:で２名、:three:で３名を基本としたマッチングを行います。"
     
     def make_line(self, room_num, room_members):
-        return f"{room_num}号室: {' / '.join(room_members)}\n"
+        return f"room{room_num}: {' / '.join(room_members)}\n"
     
     def make_capacity_per_room_two_basis(self, users_num, capacity_basis):
         ROOMS_NUM = users_num // 2
