@@ -60,7 +60,7 @@ class Match(commands.Cog):
         channel = ctx.channel
         # msg = await ctx.send(embed=self.embed)
         # 動作確認用
-        msg = await ctx.send("hoge")
+        msg = await ctx.send(self.make_text(ctx.author.mention))
         emojis = ['✋', '2️⃣', '3️⃣']
         for emoji in emojis:
             await msg.add_reaction(emoji)
