@@ -58,7 +58,9 @@ class Match(commands.Cog):
         self.embed.description = self.make_text(ctx.author.mention)
         self.embed.color = discord.Color.green()
         channel = ctx.channel
-        msg = await ctx.send(embed=self.embed)
+        # msg = await ctx.send(embed=self.embed)
+        # 動作確認用
+        msg = await ctx.send("hoge")
         emojis = ['✋', '2️⃣', '3️⃣']
         for emoji in emojis:
             await msg.add_reaction(emoji)
