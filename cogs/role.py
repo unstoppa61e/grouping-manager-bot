@@ -34,8 +34,8 @@ class Role(commands.Cog):
     async def role(self, ctx):
         await self.bot.wait_until_ready()
         role_index = self.get_role_index_not_used(ctx.guild.roles)
-        print(role_index)
-
+        role_name = f"role{role_index}"
+        await ctx.guild.create_role(name=role_name)
 
 
 
