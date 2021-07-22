@@ -12,9 +12,12 @@ class Role(commands.Cog):
         embed = discord.Embed()
         return embed
 
-    def make_text(self, author_mention) -> str:
-        return f"マッチング希望者は、✋によるリアクションをお願いします。\n\n"\
-            f"{author_mention}\n:two:で２名、:three:で３名を基本としたマッチングを行います。"
+    def make_text(self, role_mention, author_mention) -> str:
+        emoji = self.get_emoji()
+        return f"新ロール、 {role_mention} が作成されました。\n\n"\
+            f"各自、{emoji}にて、本ロールのオン・オフが可能です。\n\n"\
+            f"{author_mention}\nこのロールが不要になりましたら、`!rm_role` コマンドを実行してください"\
+            "（サーバとメンバーから、本ロールが削除されます）"
     
     def get_role_index_not_used(self, roles):
         num = 0
@@ -28,23 +31,25 @@ class Role(commands.Cog):
                 break
             num += 1
         return num
+    
+    def make_role_name(self, roles):
+        role_index = self.get_role_index_not_used(roles)
+        return f"role{role_index}"
+    
+    def get_emoji(self):
+        return '✅'
 
 
     @commands.command()
     async def role(self, ctx):
         await self.bot.wait_until_ready()
-        role_index = self.get_role_index_not_used(ctx.guild.roles)
-        role_name = f"role{role_index}"
-        await ctx.guild.create_role(name=role_name)
-
-
-
-
-
-        # self.embed.description = self.make_text(ctx.author.mention)
-        # self.embed.color = discord.Color.green()
-        # channel = ctx.channel
-        # msg = await ctx.send(embed=self.embed)
+        role_name = self.make_role_name(ctx.guild.roles)
+        role = await ctx.guild.create_role(name=role_name)
+        self.embed.description = self.make_text(role.mention, ctx.author.mention)
+        self.embed.color = discord.Color.green()
+        channel = ctx.channel
+        msg = await ctx.send(embed=self.embed)
+        await msg.add_reaction(self.get_emoji())
         # emojis = ['✋', '2️⃣', '3️⃣']
         # for emoji in emojis:
         #     await msg.add_reaction(emoji)
