@@ -8,16 +8,17 @@ def create_intents() -> discord.Intents:
     return intents
 
 
-class FreshmenHostBot(commands.Bot):
+class GroupingManagerBot(commands.Bot):
     async def on_ready(self):
         self.load_extension("cogs.change_bot_nickname")
         self.load_extension("cogs.match")
+        self.load_extension("cogs.role")
         print("on_ready")
 
 
 def main():
     intents = create_intents()
-    bot = FreshmenHostBot(command_prefix="!", intents=intents, help_command=None)
+    bot = GroupingManagerBot(command_prefix="!", intents=intents, help_command=None)
     bot.run(config.TOKEN)
 
 
