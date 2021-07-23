@@ -2,6 +2,8 @@ import discord
 from discord.ext import commands
 import asyncio
 
+REGISTER_EMOJI = '✅'
+REMOVER_EMOJI = '❌'
 
 class Role(commands.Cog):
     def __init__(self, bot):
@@ -13,11 +15,10 @@ class Role(commands.Cog):
         return embed
 
     def make_text(self, role_mention, author_mention) -> str:
-        emoji = self.get_emoji()
-        return f"新ロール、 {role_mention} が作成されました。\n\n"\
-            f"各自、{emoji}にて、本ロールのオン・オフが可能です。\n\n"\
-            f"{author_mention}\nこのロールが不要になりましたら、`!rm_role` コマンドを実行してください"\
-            "（サーバとメンバーから、本ロールが削除されます）"
+        return f"新ロール、 {role_mention} が作成されました。\n"\
+            f"各自、{REGISTER_EMOJI}にて、本ロールのオン・オフが可能です。\n"\
+            f"{author_mention} このロールが不要になりましたら、{REMOVER_EMOJI}でリアクションしてください。\n"\
+            "サーバーから本ロールが削除されます。"
     
     def get_role_index_not_used(self, roles):
         num = 0
@@ -36,26 +37,37 @@ class Role(commands.Cog):
         role_index = self.get_role_index_not_used(roles)
         return f"role{role_index}"
     
-    def get_emoji(self):
-        return '✅'
 
     @commands.Cog.listener()
     async def on_raw_reaction_add(self, payload):
-        if not payload.emoji.name == self.get_emoji():
+        emoji_name = payload.emoji.name
+        if emoji_name != REGISTER_EMOJI and emoji_name != REMOVER_EMOJI:
             return
         guild_id = payload.guild_id
         guild = discord.utils.find(lambda g: g.id == guild_id, self.bot.guilds)
         member = discord.utils.find(lambda m: m.id == payload.user_id, guild.members)
-        await member.add_roles(self.role)
+        if member.bot:
+            return
+        if emoji_name == REGISTER_EMOJI:
+            await member.add_roles(self.role)
+        else:
+            channel = self.bot.get_channel(payload.channel_id)
+            self.embed.description = f"{self.role.mention}が削除されました。"
+            self.embed.color = discord.Color.red()
+            await channel.send(embed=self.embed)
+            await self.role.delete()
 
     @commands.Cog.listener()
     async def on_raw_reaction_remove(self, payload):
-        if not payload.emoji.name == self.get_emoji():
+        if not payload.emoji.name == REGISTER_EMOJI:
             return
         guild_id = payload.guild_id
         guild = discord.utils.find(lambda g: g.id == guild_id, self.bot.guilds)
         member = discord.utils.find(lambda m: m.id == payload.user_id, guild.members)
+        if member.bot:
+            return
         await member.remove_roles(self.role)
+
 
     @commands.command()
     async def role(self, ctx):
@@ -67,40 +79,16 @@ class Role(commands.Cog):
         channel = ctx.channel
         msg = await ctx.send(embed=self.embed)
         self.msg_id = msg.id
-        await msg.add_reaction(self.get_emoji())
+        await msg.add_reaction(REGISTER_EMOJI)
+        await msg.add_reaction(REMOVER_EMOJI)
         
         def check(reaction, user):
             are_same_messages = reaction.message.channel == msg.channel and reaction.message.id == msg.id
             return user == ctx.author and are_same_messages and (str(reaction.emoji) == '2️⃣' or str(reaction.emoji) == '3️⃣')
         
-        # timeout = 60 * 60 * 24 * 30 * 2
-        # try:
-        #     reaction, user = await self.bot.wait_for('reaction_add', timeout=timeout, check=check)
-        # except asyncio.TimeoutError:
-        #     self.embed.description = '募集から２カ月が経過したため、告知を締め切りました。'
-        #     self.embed.color = discord.Color.red()
-        #     await channel.send(embed=self.embed)
-        # else:
-        #     capacity_basis = 2 if str(reaction.emoji) == '2️⃣' else 3
-        #     cached_msg = discord.utils.get(self.bot.cached_messages, id=msg.id)
-        #     reactions = cached_msg.reactions
-        #     users = []
-        #     for reaction in reactions:
-        #         if str(reaction.emoji) == '✋':
-        #             reaction_users = await reaction.users().flatten()
-        #             for user in reaction_users:
-        #                 if user.bot:
-        #                     continue
-        #                 users.append(user.mention)
-        #             break
-        #     if len(users) < 2:
-        #         self.embed.color = discord.Color.red()
-        #         self.embed.description = 'マッチングに必要な人数が集まりませんでした。'
-        #         await ctx.send(embed=self.embed)
-        #         return
-        #     random.shuffle(users)
-        #     await self.send_invitation(ctx, users, capacity_basis)
                     
+    # @commands.command()
+    # async def rm(self, ctx):
     
     
 
