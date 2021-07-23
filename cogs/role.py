@@ -87,10 +87,16 @@ class Role(commands.Cog):
             return user == ctx.author and are_same_messages and (str(reaction.emoji) == '2️⃣' or str(reaction.emoji) == '3️⃣')
         
                     
-    # @commands.command()
-    # async def rm(self, ctx):
-    
-    
+    @commands.command()
+    async def rm(self, ctx, num):
+        role_name = f"role{num}"
+        role = discord.utils.get(ctx.guild.roles, name=role_name)
+        if role is None:
+            self.embed.color = discord.Color.red()
+            self.embed.description = f"`{role_name}`というロールは存在しません。"
+            await ctx.send(embed=self.embed)
+        else:
+            await role.delete()
 
 
 def setup(bot):
