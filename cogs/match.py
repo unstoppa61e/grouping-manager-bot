@@ -1,6 +1,5 @@
 import discord
 from discord.ext import commands
-import config
 import asyncio
 import random
 import math
