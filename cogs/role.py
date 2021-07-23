@@ -53,7 +53,7 @@ class Role(commands.Cog):
         else:
             channel = self.bot.get_channel(payload.channel_id)
             self.embed.description = f"{self.role.mention}が削除されました。"
-            self.embed.color = discord.Color.red()
+            self.embed.color = discord.Color.blue()
             await channel.send(embed=self.embed)
             await self.role.delete()
 
@@ -82,10 +82,6 @@ class Role(commands.Cog):
         await msg.add_reaction(REGISTER_EMOJI)
         await msg.add_reaction(REMOVER_EMOJI)
         
-        def check(reaction, user):
-            are_same_messages = reaction.message.channel == msg.channel and reaction.message.id == msg.id
-            return user == ctx.author and are_same_messages and (str(reaction.emoji) == '2️⃣' or str(reaction.emoji) == '3️⃣')
-        
                     
     @commands.command()
     async def rm(self, ctx, num):
@@ -93,9 +89,12 @@ class Role(commands.Cog):
         role = discord.utils.get(ctx.guild.roles, name=role_name)
         if role is None:
             self.embed.color = discord.Color.red()
-            self.embed.description = f"`{role_name}`というロールは存在しません。"
+            self.embed.description = f"{ctx.author.mention} `{role_name}`というロールは存在しません。"
             await ctx.send(embed=self.embed)
         else:
+            self.embed.color = discord.Color.blue()
+            self.embed.description = f"{ctx.author.mention}さんが{role.mention}を削除しました。"
+            await ctx.send(embed=self.embed)
             await role.delete()
 
 
