@@ -12,11 +12,6 @@ class Match(commands.Cog):
 
     def __init__(self, bot):
         self.bot = bot
-        self.embed = self.init_embed()
-
-    def init_embed(self) -> discord.Embed():
-        embed = discord.Embed()
-        return embed
 
     def make_text(self, author_mention) -> str:
         return f"マッチング希望者は、{self.WILLING_EMOJI}によるリアクションをお願いします。\n"\
@@ -48,20 +43,23 @@ class Match(commands.Cog):
     async def send_invitation(self, ctx, users, capacity_basis):
         capacity_per_room = self.make_capacity_per_room(len(users), capacity_basis)
         start_i = 0
+        embed = discord.Embed()
         for i, capacity in enumerate(capacity_per_room, start=1):
             end_i = start_i + capacity
-            self.embed.description = self.make_line(i, users[start_i:end_i])
-            await ctx.send(embed=self.embed)
+            embed.description = self.make_line(i, users[start_i:end_i])
+            await ctx.send(embed=embed)
             start_i += capacity
 
 
     @commands.command()
     async def match(self, ctx):
         await self.bot.wait_until_ready()
-        self.embed.description = self.make_text(ctx.author.mention)
-        self.embed.color = discord.Color.blue()
         channel = ctx.channel
-        msg = await ctx.send(embed=self.embed)
+        embed = discord.Embed(
+            description = self.make_text(ctx.author.mention),
+            color = discord.Color.blue()
+        )
+        msg = await ctx.send(embed=embed)
         emojis = [self.WILLING_EMOJI, '2️⃣', '3️⃣']
         for emoji in emojis:
             await msg.add_reaction(emoji)
@@ -74,9 +72,9 @@ class Match(commands.Cog):
         try:
             reaction, user = await self.bot.wait_for('reaction_add', timeout=timeout, check=check)
         except asyncio.TimeoutError:
-            self.embed.description = '募集から２カ月が経過したため、告知を締め切りました。'
-            self.embed.color = discord.Color.red()
-            await channel.send(embed=self.embed)
+            embed.description = '募集から２カ月が経過したため、告知を締め切りました。'
+            embed.color = discord.Color.red()
+            await channel.send(embed=embed)
         else:
             capacity_basis = 2 if str(reaction.emoji) == '2️⃣' else 3
             cached_msg = discord.utils.get(self.bot.cached_messages, id=msg.id)
@@ -91,9 +89,9 @@ class Match(commands.Cog):
                         users.append(user.mention)
                     break
             if len(users) < 2:
-                self.embed.color = discord.Color.red()
-                self.embed.description = 'マッチングに必要な人数が集まりませんでした。'
-                await ctx.send(embed=self.embed)
+                embed.color = discord.Color.red()
+                embed.description = 'マッチングに必要な人数が集まりませんでした。'
+                await ctx.send(embed=embed)
                 return
             random.shuffle(users)
             await self.send_invitation(ctx, users, capacity_basis)
@@ -117,6 +115,14 @@ class Match(commands.Cog):
         if payload.user_id == self.bot.user.id:
             return
         await Role.handle_role_toggling_reaction(self, payload, False)
+
+    @commands.Cog.listener()
+    async def on_raw_reaction_add(self, payload):
+        if payload.emoji.name != self.WILLING_EMOJI:
+            return
+        if payload.user_id == self.bot.user.id:
+            return
+        await Role.handle_role_toggling_reaction(self, payload, True)
 
 
 def setup(bot):
