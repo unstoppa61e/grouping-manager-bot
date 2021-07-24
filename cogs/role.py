@@ -60,16 +60,6 @@ class Role(commands.Cog):
             await channel.send(embed=self.embed)
             await self.role.delete()
 
-    # @commands.Cog.listener()
-    # async def on_raw_reaction_remove(self, payload):
-    #     if not payload.emoji.name == self.REGISTER_EMOJI:
-    #         return
-    #     guild_id = payload.guild_id
-    #     guild = discord.utils.find(lambda g: g.id == guild_id, self.bot.guilds)
-    #     member = discord.utils.find(lambda m: m.id == payload.user_id, guild.members)
-    #     if member.bot:
-    #         return
-    #     await member.remove_roles(self.role)
 
     @commands.Cog.listener()
     async def on_raw_reaction_remove(self, payload):
@@ -77,42 +67,35 @@ class Role(commands.Cog):
             return
         if payload.user_id == self.bot.user.id:
             return
-        await self.handle_register_reaction_remove(payload)
+        await self.handle_role_toggling_reaction(payload, False)
     
-    async def handle_register_reaction_remove(self, payload):
+    def get_role_corresponding_to_message(guild, message):
+            role_name = message.embeds[0].fields[0].value
+            role = discord.utils.get(guild.roles, name=role_name)
+            return role
+
+
+    async def handle_role_toggling_reaction(self, payload, adding):
         channel = self.bot.get_channel(payload.channel_id)
         if not isinstance(channel, discord.TextChannel):
             return
-        # user = self.bot.get_user(payload.user_id)
-        # if user is None or user.bot:
-        #     return   
         try:
-            reaction_removed_message = await channel.fetch_message(payload.message_id)
-            if reaction_removed_message.author.id != self.bot.user.id:
+            reactioned_message = await channel.fetch_message(payload.message_id)
+            if reactioned_message.author.id != self.bot.user.id:
                 return
-            guild = reaction_removed_message.guild
+            guild = reactioned_message.guild
             member = discord.utils.find(lambda m: m.id == payload.user_id, guild.members)
             if member.bot:
                 return
-            role_name = reaction_removed_message.embeds[0].fields[0].value
-            role = discord.utils.get(guild.roles, name=role_name)
-            await member.remove_roles(role)
+            role = Role.get_role_corresponding_to_message(guild, reactioned_message)
+            if adding:
+                return
+            else:
+                await member.remove_roles(role)
         except Exception as e:
             print(e)
             print(type(e))
 
-    # @commands.command()
-    # async def role(self, ctx):
-    #     await self.bot.wait_until_ready()
-    #     role_name = self.make_role_name(ctx.guild.roles)
-    #     self.role = await ctx.guild.create_role(name=role_name)
-    #     self.embed.description = self.make_text(self.role.mention, ctx.author.mention)
-    #     self.embed.color = discord.Color.blue()
-    #     channel = ctx.channel
-    #     msg = await ctx.send(embed=self.embed)
-    #     self.msg_id = msg.id
-    #     await msg.add_reaction(self.REGISTER_EMOJI)
-    #     await msg.add_reaction(self.REMOVER_EMOJI)
 
     @commands.command()
     async def role(self, ctx):

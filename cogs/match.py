@@ -110,24 +110,13 @@ class Match(commands.Cog):
             await ctx.send(f"モジュール{module_name}の再読み込みに失敗しました。理由: {e}")
             return
     
-    # @commands.Cog.listener()
-    # async def on_raw_reaction_remove(self, payload):
-    #     if not payload.emoji.name == REGISTER_EMOJI:
-    #         return
-    #     guild_id = payload.guild_id
-    #     guild = discord.utils.find(lambda g: g.id == guild_id, self.bot.guilds)
-    #     member = discord.utils.find(lambda m: m.id == payload.user_id, guild.members)
-    #     if member.bot:
-    #         return
-    #     await member.remove_roles(self.role)
-
     @commands.Cog.listener()
     async def on_raw_reaction_remove(self, payload):
         if payload.emoji.name != self.WILLING_EMOJI:
             return
         if payload.user_id == self.bot.user.id:
             return
-        await Role.handle_register_reaction_remove(self, payload)
+        await Role.handle_role_toggling_reaction(self, payload, False)
 
 
 def setup(bot):
