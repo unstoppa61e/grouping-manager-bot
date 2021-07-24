@@ -43,17 +43,19 @@ class Role(commands.Cog):
     
     @commands.Cog.listener()
     async def on_raw_reaction_add(self, payload):
-        emoji_name = payload.emoji.name
-        if emoji_name != self.REGISTER_EMOJI and emoji_name != self.REMOVER_EMOJI:
+        if payload.user_id == self.bot.user.id:
             return
-        guild_id = payload.guild_id
-        guild = discord.utils.find(lambda g: g.id == guild_id, self.bot.guilds)
-        member = discord.utils.find(lambda m: m.id == payload.user_id, guild.members)
-        if member.bot:
-            return
-        if emoji_name == self.REGISTER_EMOJI:
-            await member.add_roles(self.role)
+        if payload.emoji.name == self.REGISTER_EMOJI:
+            await self.handle_role_toggling_reaction(payload, True)
         else:
+            emoji_name = payload.emoji.name
+            if emoji_name != self.REGISTER_EMOJI and emoji_name != self.REMOVER_EMOJI:
+                return
+            guild_id = payload.guild_id
+            guild = discord.utils.find(lambda g: g.id == guild_id, self.bot.guilds)
+            member = discord.utils.find(lambda m: m.id == payload.user_id, guild.members)
+            if member.bot:
+                return
             channel = self.bot.get_channel(payload.channel_id)
             self.embed.description = f"{self.role.mention}が削除されました。"
             self.embed.color = discord.Color.blue()
@@ -74,7 +76,6 @@ class Role(commands.Cog):
             role = discord.utils.get(guild.roles, name=role_name)
             return role
 
-
     async def handle_role_toggling_reaction(self, payload, adding):
         channel = self.bot.get_channel(payload.channel_id)
         if not isinstance(channel, discord.TextChannel):
@@ -89,7 +90,7 @@ class Role(commands.Cog):
                 return
             role = Role.get_role_corresponding_to_message(guild, reactioned_message)
             if adding:
-                return
+                await member.add_roles(role)
             else:
                 await member.remove_roles(role)
         except Exception as e:
@@ -103,6 +104,7 @@ class Role(commands.Cog):
         role_name = self.make_role_name(ctx.guild.roles)
         self.role = await ctx.guild.create_role(name=role_name)
         self.embed.description = self.make_text(self.role.mention, ctx.author.mention)
+        self.embed.clear_fields()
         self.embed.add_field(name="new_role_name", value=role_name)
         self.embed.color = discord.Color.blue()
         channel = ctx.channel
