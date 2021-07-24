@@ -20,8 +20,8 @@ class Match(commands.Cog):
             ":two:で２名、:three:で３名を基本としたマッチングを行います。\n"\
             f"{Role.make_how_to_destruct_role_message()}"
     
-    def make_line(self, room_num, room_members):
-        return f"room{room_num}: {' / '.join(room_members)}\n"
+    def make_line(self, channel_name, room_members):
+        return f"{channel_name}: {' / '.join(room_members)}\n"
     
     def make_capacity_per_room_two_basis(self, users_num, capacity_basis):
         ROOMS_NUM = users_num // 2
@@ -43,14 +43,21 @@ class Match(commands.Cog):
             return self.make_capacity_per_room_two_basis(users_num, capacity_basis)
         return self.make_capacity_per_room_three_basis(users_num, capacity_basis)
 
-    async def send_invitation(self, channel, users, capacity_basis):
+    async def send_invitation(self, channel, channel_name, users):
+        embed = discord.Embed(
+            description = self.make_line(channel_name, users),
+            color = discord.Color.random()
+        )
+        await channel.send(embed=embed)
+
+    async def send_invitations_creating_channels(self, channel, users, capacity_basis):
         capacity_per_room = self.make_capacity_per_room(len(users), capacity_basis)
         start_i = 0
-        embed = discord.Embed()
         for i, capacity in enumerate(capacity_per_room, start=1):
             end_i = start_i + capacity
-            embed.description = self.make_line(i, users[start_i:end_i])
-            await channel.send(embed=embed)
+            channel_name = f"room{i}"
+            await self.send_invitation(channel, channel_name, users[start_i:end_i])
+            await channel.guild.create_voice_channel(channel_name, category=channel.category)
             start_i += capacity
 
 
@@ -83,7 +90,7 @@ class Match(commands.Cog):
         return users
 
 
-    async def send_matching_result_message(self, payload, emoji_name):
+    async def handle_matching_result(self, payload, emoji_name):
         channel = self.bot.get_channel(payload.channel_id)
         if not isinstance(channel, discord.TextChannel):
             return
@@ -101,7 +108,7 @@ class Match(commands.Cog):
                 await channel.send(embed=embed)
                 return
             random.shuffle(users)
-            await self.send_invitation(channel, users, capacity_basis)
+            await self.send_invitations_creating_channels(channel, users, capacity_basis)
         except Exception as e:
             print(e)
             print(type(e))
@@ -127,7 +134,7 @@ class Match(commands.Cog):
         if emoji_name == self.WILLING_EMOJI:
             await Role.handle_role_toggling_reaction(self, payload, True)
         elif emoji_name == self.TWO_EMOJI or payload.emoji.name == self.THREE_EMOJI:
-            await self.send_matching_result_message(payload, emoji_name)
+            await self.handle_matching_result(payload, emoji_name)
 
     @commands.Cog.listener()
     async def on_raw_reaction_remove(self, payload):
