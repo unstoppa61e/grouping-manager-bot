@@ -14,7 +14,7 @@ class Role(commands.Cog):
         message = f"このロールが不要になりましたら、{Role.REMOVER_EMOJI}にて、サーバーから削除できます。"
         return message
 
-    def make_text(self, role_mention, author_mention) -> str:
+    def make_text(self, author_mention) -> str:
         return f"各自、{self.REGISTER_EMOJI}にて、新ロールのオン・オフが可能です。\n"\
             f"{author_mention} {Role.make_how_to_destruct_role_message()}"
 
@@ -76,6 +76,8 @@ class Role(commands.Cog):
                 guild,
                 reactioned_msg
             )
+            if role is None:
+                return
             if adding:
                 await member.add_roles(role)
             else:
@@ -106,7 +108,7 @@ class Role(commands.Cog):
             if role is None:
                 return
             embed = discord.Embed(
-                description=f"{role.mention}が削除されました。",
+                description=f"`{role.name}`ロールが削除されました。",
                 color=discord.Color.green()
             )
             await channel.send(embed=embed)
@@ -133,7 +135,7 @@ class Role(commands.Cog):
         await self.bot.wait_until_ready()
         role_name = Role.make_role_name(ctx.guild.roles)
         embed = discord.Embed(
-            description=self.make_text(role.mention, ctx.author.mention),
+            description=self.make_text(ctx.author.mention),
             color=discord.Color.blue()
         )
         role = await ctx.guild.create_role(name=role_name)
@@ -157,7 +159,7 @@ class Role(commands.Cog):
         else:
             embed.color = discord.Color.green()
             embed.description = f"{ctx.author.mention}さんが"\
-                f"{role.mention}を削除しました。"
+                f"`{role.name}`ロールを削除しました。"
             await ctx.send(embed=embed)
             await role.delete()
 
