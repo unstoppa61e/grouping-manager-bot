@@ -8,6 +8,8 @@ from cogs.role import Role
 
 class Match(commands.Cog):
     WILLING_EMOJI = '✋'
+    TWO_EMOJI = '2️⃣'
+    THREE_EMOJI = '3️⃣'
 
     def __init__(self, bot):
         self.bot = bot
@@ -41,14 +43,14 @@ class Match(commands.Cog):
             return self.make_capacity_per_room_two_basis(users_num, capacity_basis)
         return self.make_capacity_per_room_three_basis(users_num, capacity_basis)
 
-    async def send_invitation(self, ctx, users, capacity_basis):
+    async def send_invitation(self, channel, users, capacity_basis):
         capacity_per_room = self.make_capacity_per_room(len(users), capacity_basis)
         start_i = 0
         embed = discord.Embed()
         for i, capacity in enumerate(capacity_per_room, start=1):
             end_i = start_i + capacity
             embed.description = self.make_line(i, users[start_i:end_i])
-            await ctx.send(embed=embed)
+            await channel.send(embed=embed)
             start_i += capacity
 
 
@@ -64,43 +66,46 @@ class Match(commands.Cog):
         role = await ctx.guild.create_role(name=role_name)
         embed.add_field(name="new_role_name", value=role_name)
         msg = await ctx.send(embed=embed)
-        emojis = [self.WILLING_EMOJI, '2️⃣', '3️⃣', Role.REMOVER_EMOJI]
+        emojis = [self.WILLING_EMOJI, self.TWO_EMOJI, self.THREE_EMOJI, Role.REMOVER_EMOJI]
         for emoji in emojis:
             await msg.add_reaction(emoji)
-        
-        def check(reaction, user):
-            are_same_messages = reaction.message.channel == msg.channel and reaction.message.id == msg.id
-            return user == ctx.author and are_same_messages and (str(reaction.emoji) == '2️⃣' or str(reaction.emoji) == '3️⃣')
-        
-        timeout = 60 * 60 * 24 * 30 * 2
+    
+    async def get_users_for_matching(self, reactions):
+        users = []
+        for reaction in reactions:
+            if str(reaction.emoji) == self.WILLING_EMOJI:
+                reaction_users = await reaction.users().flatten()
+                for user in reaction_users:
+                    if user.bot:
+                        continue
+                    users.append(user.mention)
+                break
+        return users
+
+
+    async def send_matching_result_message(self, payload, emoji_name):
+        channel = self.bot.get_channel(payload.channel_id)
+        if not isinstance(channel, discord.TextChannel):
+            return
         try:
-            reaction, user = await self.bot.wait_for('reaction_add', timeout=timeout, check=check)
-        except asyncio.TimeoutError:
-            embed.description = '募集から２カ月が経過したため、告知を締め切りました。'
-            embed.color = discord.Color.red()
-            await channel.send(embed=embed)
-        else:
-            capacity_basis = 2 if str(reaction.emoji) == '2️⃣' else 3
-            cached_msg = discord.utils.get(self.bot.cached_messages, id=msg.id)
-            reactions = cached_msg.reactions
-            users = []
-            for reaction in reactions:
-                if str(reaction.emoji) == self.WILLING_EMOJI:
-                    reaction_users = await reaction.users().flatten()
-                    for user in reaction_users:
-                        if user.bot:
-                            continue
-                        users.append(user.mention)
-                    break
+            capacity_basis = 2 if emoji_name == self.TWO_EMOJI else 3
+            reactioned_message = await channel.fetch_message(payload.message_id)
+            if reactioned_message.author.id != self.bot.user.id:
+                return
+            users = await self.get_users_for_matching(reactioned_message.reactions)
             if len(users) < 2:
-                embed.color = discord.Color.red()
-                embed.clear_fields()
-                embed.description = 'マッチングに必要な人数が集まりませんでした。'
-                await ctx.send(embed=embed)
+                embed = discord.Embed(
+                    description = 'マッチングに必要な人数が集まっていません。',
+                    color = discord.Color.red()
+                )
+                await channel.send(embed=embed)
                 return
             random.shuffle(users)
-            await self.send_invitation(ctx, users, capacity_basis)
-                    
+            await self.send_invitation(channel, users, capacity_basis)
+        except Exception as e:
+            print(e)
+            print(type(e))
+
     
     @commands.is_owner()
     @commands.command()
@@ -113,16 +118,16 @@ class Match(commands.Cog):
             await ctx.send(f"モジュール{module_name}の再読み込みに失敗しました。理由: {e}")
             return
     
+
     @commands.Cog.listener()
     async def on_raw_reaction_add(self, payload):
-        if payload.emoji.name != self.WILLING_EMOJI:
-            return
         if payload.user_id == self.bot.user.id:
             return
-        if payload.emoji.name == self.WILLING_EMOJI:
+        emoji_name = payload.emoji.name
+        if emoji_name == self.WILLING_EMOJI:
             await Role.handle_role_toggling_reaction(self, payload, True)
-        elif payload.emoji.name == Role.REMOVER_EMOJI:
-            await Role.handle_role_destroying_reaction(self, payload)
+        elif emoji_name == self.TWO_EMOJI or payload.emoji.name == self.THREE_EMOJI:
+            await self.send_matching_result_message(payload, emoji_name)
 
     @commands.Cog.listener()
     async def on_raw_reaction_remove(self, payload):
@@ -131,7 +136,6 @@ class Match(commands.Cog):
         if payload.user_id == self.bot.user.id:
             return
         await Role.handle_role_toggling_reaction(self, payload, False)
-
 
 
 def setup(bot):
