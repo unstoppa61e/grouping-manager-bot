@@ -9,11 +9,15 @@ class Role(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
+    def make_how_to_destruct_role_message():
+        message = f"このロールが不要になりましたら、{Role.REMOVER_EMOJI}にて、サーバーから削除できます。"
+        return message
+
     def make_text(self, role_mention, author_mention) -> str:
         return f"各自、{self.REGISTER_EMOJI}にて、新ロールのオン・オフが可能です。\n"\
-            f"{author_mention} このロールが不要になりましたら、{self.REMOVER_EMOJI}にて、サーバーから削除できます。"
+            f"{author_mention} {Role.make_how_to_destruct_role_message()}"
     
-    def get_role_index_not_used(self, roles):
+    def get_role_index_not_used(roles):
         num = 0
         while True:
             found = False
@@ -26,10 +30,9 @@ class Role(commands.Cog):
             num += 1
         return num
     
-    def make_role_name(self, roles):
-        role_index = self.get_role_index_not_used(roles)
+    def make_role_name(roles):
+        role_index = Role.get_role_index_not_used(roles)
         return f"role{role_index}"
-    
 
 
     @commands.Cog.listener()
@@ -116,12 +119,12 @@ class Role(commands.Cog):
     @commands.command()
     async def role(self, ctx):
         await self.bot.wait_until_ready()
-        role_name = self.make_role_name(ctx.guild.roles)
-        self.role = await ctx.guild.create_role(name=role_name)
+        role_name = Role.make_role_name(ctx.guild.roles)
         embed = discord.Embed(
-            description = self.make_text(self.role.mention, ctx.author.mention),
+            description = self.make_text(role.mention, ctx.author.mention),
             color = discord.Color.blue()
         )
+        role = await ctx.guild.create_role(name=role_name)
         embed.add_field(name="new_role_name", value=role_name)
         channel = ctx.channel
         msg = await ctx.send(embed=embed)
@@ -132,9 +135,9 @@ class Role(commands.Cog):
                     
     @commands.command()
     async def rm(self, ctx, num):
+        embed = discord.Embed()
         role_name = f"role{num}"
         role = discord.utils.get(ctx.guild.roles, name=role_name)
-        embed = discord.Embed()
         if role is None:
             embed.color = discord.Color.red()
             embed.description = f"{ctx.author.mention} `{role_name}`というロールは存在しません。"

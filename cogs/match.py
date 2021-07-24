@@ -7,15 +7,16 @@ from cogs.role import Role
 
 
 class Match(commands.Cog):
-    REMOVER_EMOJI = '❌'
     WILLING_EMOJI = '✋'
 
     def __init__(self, bot):
         self.bot = bot
 
     def make_text(self, author_mention) -> str:
-        return f"マッチング希望者は、{self.WILLING_EMOJI}によるリアクションをお願いします。\n"\
-            f"{author_mention}\n:two:で２名、:three:で３名を基本としたマッチングを行います。"
+        return f"マッチング希望者は、{self.WILLING_EMOJI}によるリアクションをお願いします（通知用の新ロールが付与されます）。\n"\
+            f"{author_mention}\n"\
+            ":two:で２名、:three:で３名を基本としたマッチングを行います。\n"\
+            f"{Role.make_how_to_destruct_role_message()}"
     
     def make_line(self, room_num, room_members):
         return f"room{room_num}: {' / '.join(room_members)}\n"
@@ -59,8 +60,11 @@ class Match(commands.Cog):
             description = self.make_text(ctx.author.mention),
             color = discord.Color.blue()
         )
+        role_name = Role.make_role_name(ctx.guild.roles)
+        role = await ctx.guild.create_role(name=role_name)
+        embed.add_field(name="new_role_name", value=role_name)
         msg = await ctx.send(embed=embed)
-        emojis = [self.WILLING_EMOJI, '2️⃣', '3️⃣']
+        emojis = [self.WILLING_EMOJI, '2️⃣', '3️⃣', Role.REMOVER_EMOJI]
         for emoji in emojis:
             await msg.add_reaction(emoji)
         
@@ -90,6 +94,7 @@ class Match(commands.Cog):
                     break
             if len(users) < 2:
                 embed.color = discord.Color.red()
+                embed.clear_fields()
                 embed.description = 'マッチングに必要な人数が集まりませんでした。'
                 await ctx.send(embed=embed)
                 return
@@ -109,6 +114,17 @@ class Match(commands.Cog):
             return
     
     @commands.Cog.listener()
+    async def on_raw_reaction_add(self, payload):
+        if payload.emoji.name != self.WILLING_EMOJI:
+            return
+        if payload.user_id == self.bot.user.id:
+            return
+        if payload.emoji.name == self.WILLING_EMOJI:
+            await Role.handle_role_toggling_reaction(self, payload, True)
+        elif payload.emoji.name == Role.REMOVER_EMOJI:
+            await Role.handle_role_destroying_reaction(self, payload)
+
+    @commands.Cog.listener()
     async def on_raw_reaction_remove(self, payload):
         if payload.emoji.name != self.WILLING_EMOJI:
             return
@@ -116,13 +132,6 @@ class Match(commands.Cog):
             return
         await Role.handle_role_toggling_reaction(self, payload, False)
 
-    @commands.Cog.listener()
-    async def on_raw_reaction_add(self, payload):
-        if payload.emoji.name != self.WILLING_EMOJI:
-            return
-        if payload.user_id == self.bot.user.id:
-            return
-        await Role.handle_role_toggling_reaction(self, payload, True)
 
 
 def setup(bot):
