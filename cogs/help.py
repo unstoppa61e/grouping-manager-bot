@@ -17,8 +17,9 @@ class Help(commands.Cog):
         )
         embed.add_field(
             name="role (引数)",
-            value="ロール付与用メッセージの送信\n"\
-                    "e.g.) `+role hoge`: `hogeRole`を生成",
+            value="ロール付与用メッセージの送信\n"
+            "e.g.) `+role hoge`: `role_hoge`を生成\n"
+            "引数なしで実行した場合、未使用の数値が割り当てられます。",
             inline=False
         )
         embed.set_footer(

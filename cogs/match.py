@@ -90,7 +90,7 @@ class Match(commands.Cog):
             description=self.make_text(ctx.author.mention),
             color=discord.Color.blue()
         )
-        role_name = Role.make_role_name(ctx.guild.roles)
+        role_name = Role.make_role_name_with_index(ctx.guild.roles)
         role = await ctx.guild.create_role(name=role_name)
         embed.add_field(name="new_role_name", value=role_name)
         msg = await ctx.send(embed=embed)
