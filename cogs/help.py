@@ -16,12 +16,14 @@ class Help(commands.Cog):
             inline=False
         )
         embed.add_field(
-            name="role",
-            value="ロール付与用メッセージの送信",
+            name="role (引数)",
+            value="ロール付与用メッセージの送信\n"
+            "e.g.) `+role hoge`: `role_hoge`を生成\n"
+            "引数なしで実行した場合、未使用の数値が割り当てられます。",
             inline=False
         )
         embed.set_footer(
-            text="ご要望・不具合のご報告は monoue までお願いします。"
+            text="不具合等のご報告は monoue（マコト）までお願いします。"
         )
         return embed
 

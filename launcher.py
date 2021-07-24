@@ -20,7 +20,7 @@ class GroupingManagerBot(commands.Bot):
 def main():
     intents = create_intents()
     bot = GroupingManagerBot(
-        command_prefix="!",
+        command_prefix="+",
         intents=intents,
         help_command=None
     )

@@ -6,6 +6,7 @@ import asyncio
 class Role(commands.Cog):
     REGISTER_EMOJI = '✅'
     REMOVER_EMOJI = '❌'
+    ROLE_NAME_HEAD = 'role_'
 
     def __init__(self, bot):
         self.bot = bot
@@ -23,7 +24,7 @@ class Role(commands.Cog):
         while True:
             found = False
             for role in roles:
-                if role.name == f"role{num}":
+                if role.name == f"{Role.ROLE_NAME_HEAD}{num}":
                     found = True
                     break
             if found is False:
@@ -31,9 +32,9 @@ class Role(commands.Cog):
             num += 1
         return num
 
-    def make_role_name(roles):
+    def make_role_name_with_index(roles):
         role_index = Role.get_role_index_not_used(roles)
-        return f"role{role_index}"
+        return f"{Role.ROLE_NAME_HEAD}{role_index}"
 
     @commands.Cog.listener()
     async def on_raw_reaction_add(self, payload):
@@ -130,10 +131,36 @@ class Role(commands.Cog):
             return
         channel = self.bot.get_channel(payload.channel_id)
 
+    def role_name_exists(self, role_name, roles):
+        for role in roles:
+            if role.name == role_name:
+                return True
+        return False
+
+    def make_role_name_error_message(self, role_name):
+        embed = discord.Embed(
+            description=f"`{role_name}`という名前のロールは既に存在します。",
+            color=discord.Color.red()
+        )
+        return embed
+
+    def make_role_name(self, role_name_tail, roles):
+        role_name = None
+        if role_name_tail is None:
+            role_name = Role.make_role_name_with_index(roles)
+        else:
+            role_name = f"{self.ROLE_NAME_HEAD}{role_name_tail}"
+        return role_name
+
     @commands.command()
-    async def role(self, ctx):
+    async def role(self, ctx, role_name_tail=None):
         await self.bot.wait_until_ready()
-        role_name = Role.make_role_name(ctx.guild.roles)
+        roles = ctx.guild.roles
+        role_name = self.make_role_name(role_name_tail, roles)
+        if role_name_tail and self.role_name_exists(role_name, roles):
+            embed = self.make_role_name_error_message(role_name)
+            await ctx.send(embed=embed)
+            return
         embed = discord.Embed(
             description=self.make_text(ctx.author.mention),
             color=discord.Color.blue()
@@ -147,9 +174,9 @@ class Role(commands.Cog):
         await msg.add_reaction(self.REMOVER_EMOJI)
 
     @commands.command()
-    async def rm(self, ctx, num):
+    async def rm(self, ctx, role_name_tail):
         embed = discord.Embed()
-        role_name = f"role{num}"
+        role_name = f"{self.ROLE_NAME_HEAD}{role_name_tail}"
         role = discord.utils.get(ctx.guild.roles, name=role_name)
         if role is None:
             embed.color = discord.Color.red()
