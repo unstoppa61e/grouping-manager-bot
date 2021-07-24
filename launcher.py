@@ -13,6 +13,7 @@ class GroupingManagerBot(commands.Bot):
         self.load_extension("cogs.change_bot_nickname")
         self.load_extension("cogs.match")
         self.load_extension("cogs.role")
+        self.load_extension("cogs.help")
         print("on_ready")
 
 
