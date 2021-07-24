@@ -3,9 +3,13 @@ from discord.ext import commands
 import asyncio
 import random
 import math
+from cogs.role import Role
 
 
 class Match(commands.Cog):
+    REMOVER_EMOJI = '❌'
+    WILLING_EMOJI = '✋'
+
     def __init__(self, bot):
         self.bot = bot
         self.embed = self.init_embed()
@@ -15,7 +19,7 @@ class Match(commands.Cog):
         return embed
 
     def make_text(self, author_mention) -> str:
-        return f"マッチング希望者は、✋によるリアクションをお願いします。\n\n"\
+        return f"マッチング希望者は、{self.WILLING_EMOJI}によるリアクションをお願いします。\n"\
             f"{author_mention}\n:two:で２名、:three:で３名を基本としたマッチングを行います。"
     
     def make_line(self, room_num, room_members):
@@ -55,10 +59,10 @@ class Match(commands.Cog):
     async def match(self, ctx):
         await self.bot.wait_until_ready()
         self.embed.description = self.make_text(ctx.author.mention)
-        self.embed.color = discord.Color.green()
+        self.embed.color = discord.Color.blue()
         channel = ctx.channel
         msg = await ctx.send(embed=self.embed)
-        emojis = ['✋', '2️⃣', '3️⃣']
+        emojis = [self.WILLING_EMOJI, '2️⃣', '3️⃣']
         for emoji in emojis:
             await msg.add_reaction(emoji)
         
@@ -79,7 +83,7 @@ class Match(commands.Cog):
             reactions = cached_msg.reactions
             users = []
             for reaction in reactions:
-                if str(reaction.emoji) == '✋':
+                if str(reaction.emoji) == self.WILLING_EMOJI:
                     reaction_users = await reaction.users().flatten()
                     for user in reaction_users:
                         if user.bot:
@@ -106,6 +110,24 @@ class Match(commands.Cog):
             await ctx.send(f"モジュール{module_name}の再読み込みに失敗しました。理由: {e}")
             return
     
+    # @commands.Cog.listener()
+    # async def on_raw_reaction_remove(self, payload):
+    #     if not payload.emoji.name == REGISTER_EMOJI:
+    #         return
+    #     guild_id = payload.guild_id
+    #     guild = discord.utils.find(lambda g: g.id == guild_id, self.bot.guilds)
+    #     member = discord.utils.find(lambda m: m.id == payload.user_id, guild.members)
+    #     if member.bot:
+    #         return
+    #     await member.remove_roles(self.role)
+
+    @commands.Cog.listener()
+    async def on_raw_reaction_remove(self, payload):
+        if payload.emoji.name != self.WILLING_EMOJI:
+            return
+        if payload.user_id == self.bot.user.id:
+            return
+        await Role.handle_register_reaction_remove(self, payload)
 
 
 def setup(bot):
