@@ -109,7 +109,7 @@ class Role(commands.Cog):
             if role is None:
                 return
             embed = discord.Embed(
-                description=f"`{role.name}`ロールが削除されました。",
+                description=f"{payload.member.mention}さんにより`{role.name}`ロールが削除されました。",
                 color=discord.Color.green()
             )
             await channel.send(embed=embed)

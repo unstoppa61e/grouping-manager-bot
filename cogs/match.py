@@ -14,10 +14,9 @@ class Match(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    def make_text(self, author_mention) -> str:
+    def make_text(self) -> str:
         return f"マッチング希望者は、{self.WILLING_EMOJI}によるリアクションをお願いします"\
             "（通知用の新ロールが付与されます）。\n"\
-            f"{author_mention}\n"\
             ":two:で２名、:three:で３名を基本としたマッチングを行います。\n"\
             f"{Role.make_how_to_destruct_role_message()}"
 
@@ -56,13 +55,23 @@ class Match(commands.Cog):
             color=discord.Color.random()
         )
         await channel.send(embed=embed)
+    
+    async def send_introduction(self, channel, reactioner_mention):
+        embed = discord.Embed(
+            description=f"{reactioner_mention}さんがマッチングを実施しました。\n"\
+                "各自、割り当てられたボイスチャンネルへ入室してください。",
+            color=discord.Color.gold()
+        )
+        await channel.send(embed=embed)
 
     async def send_invitations_creating_channels(
         self,
         channel,
         users,
-        capacity_basis
+        capacity_basis,
+        reactioner_mention
     ):
+        await self.send_introduction(channel, reactioner_mention)
         capacity_per_room = self.make_capacity_per_room(
             len(users),
             capacity_basis
@@ -87,7 +96,7 @@ class Match(commands.Cog):
         await self.bot.wait_until_ready()
         channel = ctx.channel
         embed = discord.Embed(
-            description=self.make_text(ctx.author.mention),
+            description=self.make_text(),
             color=discord.Color.blue()
         )
         role_name = Role.make_role_name_with_index(ctx.guild.roles)
@@ -129,9 +138,10 @@ class Match(commands.Cog):
             users = await self.get_users_for_matching(
                 reactioned_message.reactions
             )
+            reactioner_mention = payload.member.mention
             if len(users) < 2:
                 embed = discord.Embed(
-                    description='マッチングに必要な人数が集まっていません。',
+                    description=f"{reactioner_mention} マッチングに必要な人数が集まっていません。",
                     color=discord.Color.red()
                 )
                 await channel.send(embed=embed)
@@ -140,7 +150,8 @@ class Match(commands.Cog):
             await self.send_invitations_creating_channels(
                 channel,
                 users,
-                capacity_basis
+                capacity_basis,
+                reactioner_mention
             )
         except Exception as e:
             print(e)
