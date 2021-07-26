@@ -1,3 +1,3 @@
 import os
 
-TOKEN = my_config.TOKEN
+TOKEN = os.environ['TOKEN']
