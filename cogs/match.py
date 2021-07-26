@@ -20,8 +20,11 @@ class Match(commands.Cog):
             ":two:で２名、:three:で３名を基本としたマッチングを行います。\n"\
             f"{Role.make_how_to_destruct_role_message()}"
 
-    def make_line(self, channel_name, room_members):
-        return f"{channel_name}: {' / '.join(room_members)}\n"
+    def make_line(self, channel_name, room_member_ids):
+        room_members_mentions = []
+        for member_id in room_member_ids:
+            room_members_mentions.append(f"<@{str(member_id)}>")
+        return f"{channel_name}: {' / '.join(room_members_mentions)}\n"
 
     def make_capacity_per_room_two_basis(self, users_num, capacity_basis):
         ROOMS_NUM = users_num // 2
@@ -49,9 +52,9 @@ class Match(commands.Cog):
             capacity_basis
         )
 
-    async def send_invitation(self, channel, channel_name, users):
+    async def send_invitation(self, channel, channel_name, user_ids):
         embed = discord.Embed(
-            description=self.make_line(channel_name, users),
+            description=self.make_line(channel_name, user_ids),
             color=discord.Color.random()
         )
         await channel.send(embed=embed)
@@ -67,13 +70,13 @@ class Match(commands.Cog):
     async def send_invitations_creating_channels(
         self,
         channel,
-        users,
+        user_ids,
         capacity_basis,
         reactioner_mention
     ):
         await self.send_introduction(channel, reactioner_mention)
         capacity_per_room = self.make_capacity_per_room(
-            len(users),
+            len(user_ids),
             capacity_basis
         )
         start_i = 0
@@ -83,7 +86,7 @@ class Match(commands.Cog):
             await self.send_invitation(
                 channel,
                 channel_name,
-                users[start_i:end_i]
+                user_ids[start_i:end_i]
             )
             await channel.guild.create_voice_channel(
                 channel_name,
@@ -112,7 +115,7 @@ class Match(commands.Cog):
         for emoji in emojis:
             await msg.add_reaction(emoji)
 
-    async def get_users_for_matching(self, reactions):
+    async def get_user_ids_for_matching(self, reactions):
         users = []
         for reaction in reactions:
             if str(reaction.emoji) == self.WILLING_EMOJI:
@@ -120,7 +123,7 @@ class Match(commands.Cog):
                 for user in reaction_users:
                     if user.bot:
                         continue
-                    users.append(user.mention)
+                    users.append(user.id)
                 break
         return users
 
@@ -135,21 +138,21 @@ class Match(commands.Cog):
             )
             if reactioned_message.author.id != self.bot.user.id:
                 return
-            users = await self.get_users_for_matching(
+            user_ids = await self.get_user_ids_for_matching(
                 reactioned_message.reactions
             )
             reactioner_mention = payload.member.mention
-            if len(users) < 2:
+            if len(user_ids) < 2:
                 embed = discord.Embed(
                     description=f"{reactioner_mention} マッチングに必要な人数が集まっていません。",
                     color=discord.Color.red()
                 )
                 await channel.send(embed=embed)
                 return
-            random.shuffle(users)
+            random.shuffle(user_ids)
             await self.send_invitations_creating_channels(
                 channel,
-                users,
+                user_ids,
                 capacity_basis,
                 reactioner_mention
             )
