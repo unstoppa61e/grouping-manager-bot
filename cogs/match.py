@@ -56,11 +56,11 @@ class Match(commands.Cog):
     async def send_invitation(self, channel, channel_name, user_ids):
         invitation_line = self.make_line(channel_name, user_ids, channel.guild)
         await channel.send(invitation_line)
-    
+
     async def send_introduction(self, channel, reactioner_mention):
         embed = discord.Embed(
-            description=f"{reactioner_mention}さんがマッチングを実施しました。\n"\
-                "各自、割り当てられたボイスチャンネルへ入室してください。",
+            description=f"{reactioner_mention}さんがマッチングを実施しました。\n"
+                        "各自、割り当てられたボイスチャンネルへ入室してください。",
             color=discord.Color.gold()
         )
         await channel.send(embed=embed)

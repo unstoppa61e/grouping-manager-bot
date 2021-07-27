@@ -89,25 +89,20 @@ class Role(commands.Cog):
 
     async def send_role_destroying_msg(self, user_mention, role_name, channel):
         embed = discord.Embed(
-            description=f"{user_mention}さんにより`{role_name}`ロールが削除されました。",
+            description=f"{user_mention}さんにより、`{role_name}`ロールが削除されました。",
             color=discord.Color.green()
         )
         await channel.send(embed=embed)
 
-    async def send_msg_role_already_destroyed(self, role_name, channel):
+    async def send_error_msg_via_dm(self, member, msg, text):
+        msg_url = msg.jump_url
+        text_to_jump_back = f"[こちらのリンク]({msg_url})から、元のメッセージに戻れます。"
         embed = discord.Embed(
             color=discord.Color.red(),
-            description=f"`{role_name}`ロールは既に削除済みです。"
+            description=f"{text}\n{text_to_jump_back}"
         )
-        await channel.send(embed=embed)
-    
-    async def send_msg_destroying_role_not_allowed(self, command_user_name, channel):
-        embed = discord.Embed(
-            color=discord.Color.red(),
-            description=f"{self.REMOVER_EMOJI}によるロールの削除は、`{command_user_name}`さんのみが実行できます。"
-        )
-        await channel.send(embed=embed)
-
+        await member.send(embed=embed)
+        return
 
     async def handle_role_destroying_reaction(self, payload):
         channel = self.bot.get_channel(payload.channel_id)
@@ -130,33 +125,24 @@ class Role(commands.Cog):
             )
             if role is None:
                 role_name = reactioned_msg.embeds[0].fields[0].value
-                await self.send_msg_role_already_destroyed(role_name, channel)
+                text = f"`{role_name}`ロールは既に削除済みです。"
+                await self.send_error_msg_via_dm(member, reactioned_msg, text)
                 return
             command_user_name = reactioned_msg.embeds[0].fields[1].value
             if command_user_name != member.name:
-                await self.send_msg_destroying_role_not_allowed(command_user_name, channel)
+                text = f"{self.REMOVER_EMOJI}によるロールの削除は、"\
+                    f"元のコマンドを実行した`{command_user_name}`さんのみに許可されています。"
+                await self.send_error_msg_via_dm(member, reactioned_msg, text)
                 return
-            await self.send_role_destroying_msg(payload.member.mention, role.name, channel)
+            await self.send_role_destroying_msg(
+                payload.member.mention,
+                role.name,
+                channel
+            )
             await role.delete()
         except Exception as e:
             print(e)
             print(type(e))
-        
-
-
-
-        emoji_name = payload.emoji.name
-        if emoji_name != self.REMOVER_EMOJI:
-            return
-        guild_id = payload.guild_id
-        guild = discord.utils.find(lambda g: g.id == guild_id, self.bot.guilds)
-        member = discord.utils.find(
-            lambda m: m.id == payload.user_id,
-            guild.members
-        )
-        if member.bot:
-            return
-        channel = self.bot.get_channel(payload.channel_id)
 
     def role_name_exists(self, role_name, roles):
         for role in roles:
