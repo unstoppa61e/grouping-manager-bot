@@ -25,7 +25,7 @@ class Match(commands.Cog):
         for member_id in room_member_ids:
             member = guild.get_member(member_id)
             room_members_mentions.append(member.mention)
-        return f"{channel_name}: {' / '.join(room_members_mentions)}\n"
+        return f"**{channel_name}**: {' / '.join(room_members_mentions)}\n"
 
     def make_capacity_per_room_two_basis(self, users_num, capacity_basis):
         ROOMS_NUM = users_num // 2
