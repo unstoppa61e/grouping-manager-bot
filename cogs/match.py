@@ -54,11 +54,8 @@ class Match(commands.Cog):
         )
 
     async def send_invitation(self, channel, channel_name, user_ids):
-        embed = discord.Embed(
-            color=discord.Color.random(),
-            description=self.make_line(channel_name, user_ids, channel.guild)
-        )
-        await channel.send(embed=embed)
+        invitation_line = self.make_line(channel_name, user_ids, channel.guild)
+        await channel.send(invitation_line)
     
     async def send_introduction(self, channel, reactioner_mention):
         embed = discord.Embed(
