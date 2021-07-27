@@ -20,10 +20,11 @@ class Match(commands.Cog):
             ":two:で２名、:three:で３名を基本としたマッチングを行います。\n"\
             f"{Role.make_how_to_destruct_role_message()}"
 
-    def make_line(self, channel_name, room_member_ids):
+    def make_line(self, channel_name, room_member_ids, guild):
         room_members_mentions = []
         for member_id in room_member_ids:
-            room_members_mentions.append(f"<@{str(member_id)}>")
+            member = guild.get_member(member_id)
+            room_members_mentions.append(member.mention)
         return f"{channel_name}: {' / '.join(room_members_mentions)}\n"
 
     def make_capacity_per_room_two_basis(self, users_num, capacity_basis):
@@ -54,8 +55,8 @@ class Match(commands.Cog):
 
     async def send_invitation(self, channel, channel_name, user_ids):
         embed = discord.Embed(
-            description=self.make_line(channel_name, user_ids),
-            color=discord.Color.random()
+            color=discord.Color.random(),
+            description=self.make_line(channel_name, user_ids, channel.guild)
         )
         await channel.send(embed=embed)
     
