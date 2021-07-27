@@ -102,7 +102,8 @@ class Match(commands.Cog):
         )
         role_name = Role.make_role_name_with_index(ctx.guild.roles)
         role = await ctx.guild.create_role(name=role_name)
-        embed.add_field(name="new_role_name", value=role_name)
+        embed.add_field(name="New role", value=role_name)
+        embed.add_field(name="Called by", value=ctx.author.name)
         msg = await ctx.send(embed=embed)
         emojis = [
             self.WILLING_EMOJI,
