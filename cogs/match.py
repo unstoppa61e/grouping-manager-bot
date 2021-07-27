@@ -65,12 +65,19 @@ class Match(commands.Cog):
         )
         await channel.send(embed=embed)
 
+    def channel_already_exists(self, channels, channel_name):
+        for channel in channels:
+            if channel.name == channel_name:
+                return True
+        return False
+
     async def send_invitations_creating_channels(
         self,
         channel,
         user_ids,
         capacity_basis,
-        reactioner_mention
+        reactioner_mention,
+        role_index_str
     ):
         await self.send_introduction(channel, reactioner_mention)
         capacity_per_room = self.make_capacity_per_room(
@@ -78,19 +85,25 @@ class Match(commands.Cog):
             capacity_basis
         )
         start_i = 0
+        category = channel.category
         for i, capacity in enumerate(capacity_per_room, start=1):
             end_i = start_i + capacity
-            channel_name = f"room{i}"
+            channel_name = f"room{role_index_str}-{i}"
             await self.send_invitation(
                 channel,
                 channel_name,
                 user_ids[start_i:end_i]
             )
+            start_i += capacity
+            if self.channel_already_exists(
+                channel.guild.channels,
+                channel_name
+            ):
+                continue
             await channel.guild.create_voice_channel(
                 channel_name,
-                category=channel.category
+                category=category
             )
-            start_i += capacity
 
     @commands.command()
     async def match(self, ctx):
@@ -132,13 +145,13 @@ class Match(commands.Cog):
             return
         try:
             capacity_basis = 2 if emoji_name == self.TWO_EMOJI else 3
-            reactioned_message = await channel.fetch_message(
+            reactioned_msg = await channel.fetch_message(
                 payload.message_id
             )
-            if reactioned_message.author.id != self.bot.user.id:
+            if reactioned_msg.author.id != self.bot.user.id:
                 return
             user_ids = await self.get_user_ids_for_matching(
-                reactioned_message.reactions
+                reactioned_msg.reactions
             )
             reactioner_mention = payload.member.mention
             if len(user_ids) < 2:
@@ -149,11 +162,13 @@ class Match(commands.Cog):
                 await channel.send(embed=embed)
                 return
             random.shuffle(user_ids)
+            role_index_str = reactioned_msg.embeds[0].fields[0].value[5:]
             await self.send_invitations_creating_channels(
                 channel,
                 user_ids,
                 capacity_basis,
-                reactioner_mention
+                reactioner_mention,
+                role_index_str
             )
         except Exception as e:
             print(e)
