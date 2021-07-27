@@ -14,11 +14,11 @@ class Match(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    def make_text(self) -> str:
+    def make_text(self, author_mention) -> str:
         return f"マッチング希望者は、{self.WILLING_EMOJI}によるリアクションをお願いします"\
             "（通知用の新ロールが付与されます）。\n"\
             ":two:で２名、:three:で３名を基本としたマッチングを行います。\n"\
-            f"{Role.make_how_to_destruct_role_message()}"
+            f"{author_mention} {Role.make_how_to_destruct_role_message()}"
 
     def make_line(self, channel_name, room_member_ids, guild):
         room_members_mentions = []
@@ -97,7 +97,7 @@ class Match(commands.Cog):
         await self.bot.wait_until_ready()
         channel = ctx.channel
         embed = discord.Embed(
-            description=self.make_text(),
+            description=self.make_text(ctx.author.mention),
             color=discord.Color.blue()
         )
         role_name = Role.make_role_name_with_index(ctx.guild.roles)
@@ -143,7 +143,7 @@ class Match(commands.Cog):
             reactioner_mention = payload.member.mention
             if len(user_ids) < 2:
                 embed = discord.Embed(
-                    description=f"{reactioner_mention} マッチングに必要な人数が集まっていません。",
+                    description="マッチングに必要な人数が集まっていません。",
                     color=discord.Color.red()
                 )
                 await channel.send(embed=embed)

@@ -87,6 +87,28 @@ class Role(commands.Cog):
             print(e)
             print(type(e))
 
+    async def send_role_destroying_msg(self, user_mention, role_name, channel):
+        embed = discord.Embed(
+            description=f"{user_mention}さんにより`{role_name}`ロールが削除されました。",
+            color=discord.Color.green()
+        )
+        await channel.send(embed=embed)
+
+    async def send_msg_role_already_destroyed(self, role_name, channel):
+        embed = discord.Embed(
+            color=discord.Color.red(),
+            description=f"`{role_name}`ロールは既に削除済みです。"
+        )
+        await channel.send(embed=embed)
+    
+    async def send_msg_destroying_role_not_allowed(self, command_user_name, channel):
+        embed = discord.Embed(
+            color=discord.Color.red(),
+            description=f"{self.REMOVER_EMOJI}によるロールの削除は、`{command_user_name}`さんのみが実行できます。"
+        )
+        await channel.send(embed=embed)
+
+
     async def handle_role_destroying_reaction(self, payload):
         channel = self.bot.get_channel(payload.channel_id)
         if not isinstance(channel, discord.TextChannel):
@@ -107,16 +129,21 @@ class Role(commands.Cog):
                 reactioned_msg
             )
             if role is None:
+                role_name = reactioned_msg.embeds[0].fields[0].value
+                await self.send_msg_role_already_destroyed(role_name, channel)
                 return
-            embed = discord.Embed(
-                description=f"{payload.member.mention}さんにより`{role.name}`ロールが削除されました。",
-                color=discord.Color.green()
-            )
-            await channel.send(embed=embed)
+            command_user_name = reactioned_msg.embeds[0].fields[1].value
+            if command_user_name != member.name:
+                await self.send_msg_destroying_role_not_allowed(command_user_name, channel)
+                return
+            await self.send_role_destroying_msg(payload.member.mention, role.name, channel)
             await role.delete()
         except Exception as e:
             print(e)
             print(type(e))
+        
+
+
 
         emoji_name = payload.emoji.name
         if emoji_name != self.REMOVER_EMOJI:
@@ -165,11 +192,10 @@ class Role(commands.Cog):
             description=self.make_text(ctx.author.mention),
             color=discord.Color.blue()
         )
-        role = await ctx.guild.create_role(name=role_name)
-        embed.add_field(name="new_role_name", value=role_name)
-        channel = ctx.channel
+        await ctx.guild.create_role(name=role_name)
+        embed.add_field(name="New Role", value=role_name)
+        embed.add_field(name="Called by", value=ctx.author.name)
         msg = await ctx.send(embed=embed)
-        self.msg_id = msg.id
         await msg.add_reaction(self.REGISTER_EMOJI)
         await msg.add_reaction(self.REMOVER_EMOJI)
 
