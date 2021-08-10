@@ -25,19 +25,24 @@ Discord サーバーにて`+role (引数)` コマンドを実行
 ※ロールの削除は、リアクションだけでなく、`+rm (引数)`コマンドでも行えます。
 
 ## 利用方法
+以下の2種類からお選びください。
 
-### DiscordのApplicationの作成
+### 1. こちらで公開しているものを招待
+
+https://discord.com/api/oauth2/authorize?client_id=874495948246614068&permissions=335629392&scope=bot
+
+### 2. 自前でDiscordのApplicationの作成
 
 https://discordapp.com/developers/applications/
 
 Botの設定
 
 - Developer Portal から Bot を作成し、Token を環境変数に設定
-- SERVER MEMBERS INTENT を ON にする
+- PRESENCE INTENT と SERVER MEMBERS INTENT を ON にする
 - OAuth2 の Scope から Bot をチェックし、必要権限にチェックする
 - 発行された URL から Bot をサーバーに招待する
 
-### 必要権限
+#### 必要権限
 - Manage Roles
 - Manage Channels
 - Change Nickname
@@ -47,12 +52,12 @@ Botの設定
 - Read Message History
 - Add Reactions
 
-### 環境変数の設定
+#### 環境変数の設定
 
 | 環境変数名            | 説明                                      |
 | --------------------- | ----------------------------------------- |
 | TOKEN     | BotのToken                                |
 
-### 起動方法
+#### 起動方法
 Heroku: Procfile が存在するので、特別な設定は不要です。  
 ローカル: `python launcher.py`で Bot をオンライン状態に立ち上げることができます。
