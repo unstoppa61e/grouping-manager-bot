@@ -23,7 +23,7 @@ class Help(commands.Cog):
             inline=False
         )
         embed.set_footer(
-            text="不具合等のご報告は monoue（マコト）までお願いします。"
+            text="不具合等のご報告は、あんすと（unstoppa61e）までお願いします。"
         )
         return embed
 
