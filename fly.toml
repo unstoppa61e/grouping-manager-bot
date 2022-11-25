@@ -1,0 +1,9 @@
+# fly.toml file generated for grouping-manager-bot on 2022-11-25T10:36:47+09:00
+
+app = "grouping-manager-bot"
+kill_signal = "SIGINT"
+kill_timeout = 5
+processes = []
+
+[env]
+
